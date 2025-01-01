@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>上傳 XML 並顯示</title>
+    <link rel="stylesheet" href="styles.css"> <!-- 假設你有一個樣式表 -->
+</head>
+<body>
+    <div>
+        <h1>上傳 XML 文件並顯示</h1>
+        <label for="fileInput">選擇 XML 文件:</label>
+        <input type="file" id="fileInput" accept=".xml" />
+
+        <div id="xmlContent"></div> <!-- 顯示 XML 內容 -->
+
+        <h3>XML 預覽</h3>
+        <pre id="preview"></pre> <!-- 用來顯示解析後的 XML -->
+    </div>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0]; // 取得選中的檔案
+            if (!file) {
+                alert("請選擇一個 XML 文件！");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const xmlText = e.target.result; // 讀取的 XML 文字內容
+                displayXML(xmlText);
+            };
+            reader.readAsText(file); // 讀取為文字
+        });
+
+        // 顯示 XML 內容
+        function displayXML(xmlText) {
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(xmlText, "application/xml");
+            document.getElementById('preview').textContent = new XMLSerializer().serializeToString(xmlDoc);
+            
+            // 如果需要將 XML 與 XSL 結合並顯示，可以進行處理
+            // 假設您有 XSL 來處理 XML：
+            applyXSL(xmlDoc);
+        }
+
+        // 處理 XSL 轉換
+        function applyXSL(xmlDoc) {
+            const xslFile = "style.xsl"; // 假設 style.xsl 與 HTML 在相同資料夾內
+            
+            fetch(xslFile)
+                .then(response => response.text())
+                .then(xslText => {
+                    const xslParser = new DOMParser();
+                    const xslDoc = xslParser.parseFromString(xslText, "application/xml");
+
+                    const xsltProcessor = new XSLTProcessor();
+                    xsltProcessor.importStylesheet(xslDoc);
+
+                    const resultDocument = xsltProcessor.transformToFragment(xmlDoc, document);
+                    document.getElementById('xmlContent').innerHTML = '';
+                    document.getElementById('xmlContent').appendChild(resultDocument);
+                })
+                .catch(error => console.error('XSL 轉換錯誤:', error));
+        }
+    </script>
+</body>
+</html>
